@@ -15,7 +15,7 @@ WRITE_API_KEY = ""
 
 
 
-def kanalaSortu(): # ONDO
+def kanalaSortu():
 
     # KANALEN ZERRENDA LORTZEKO ESKARIA EGIN
     metodoa = 'GET'
@@ -81,7 +81,7 @@ def kanalaSortu(): # ONDO
                 fitx.write(str(kanal_id) + '\n')
                 fitx.write(key)
 
-def cpu_ram(): # ONDO
+def cpu_ram():
     time.sleep(2)
     time.sleep(2)
     while True:
@@ -114,7 +114,7 @@ def cpu_ram(): # ONDO
 
 
 
-def kanalaGarbitu(): # ONDO
+def kanalaGarbitu():
     # ESKARIAREN PARAMETROAK DEFINITU
     metodoa = "DELETE"
     uria = "https://api.thingspeak.com/channels/" + str(CHANNEL_ID) + "/feeds.json"
@@ -134,7 +134,7 @@ def kanalaGarbitu(): # ONDO
     print(str(kodea) + " " + deskribapena)
 
 
-def datuenDeskarga(): # ONDO
+def datuenDeskarga():
     metodoa = 'GET'
     uria = 'https://api.thingspeak.com/channels/' + str(CHANNEL_ID) + '/feeds.json'
     goiburua = {'Host': 'api.thingspeak.com', 'Content-Type': 'application/x-www-form-urlencoded'}
@@ -147,7 +147,7 @@ def datuenDeskarga(): # ONDO
     return erantzuna.content
 
 
-def fitxategiaCSV(hiztegia): # ONDO
+def fitxategiaCSV(hiztegia):
     with open('csv_fitx.csv', 'w', newline='') as csvfile:
         csvfile = csv.writer(csvfile, delimiter=',', quoting=csv.QUOTE_MINIMAL)
         feedsParam = []
@@ -166,7 +166,7 @@ def fitxategiaCSV(hiztegia): # ONDO
                 csvfile.writerow([str(timestamp), str(cpu), str(ram)])
 
 
-def kudeatzailea(sig_num, frame): #ONDO
+def kudeatzailea(sig_num, frame):
     print('\nSignal handler called with signal ' + str(sig_num))
     print('Check signal number on ''https://en.wikipedia.org/wiki/Signal_%28IPC%29#Default_action')
     print('\nExiting gracefully')
