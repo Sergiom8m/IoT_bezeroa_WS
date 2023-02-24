@@ -7,182 +7,195 @@ import sys
 import requests
 import urllib.parse
 from pathlib import Path
+from USER_API_KEY import USER_API_KEY
 
-
-USER_API_KEY = "DPERKBVPXLT9ADDL"
 CHANNEL_ID = 0
-WRITE_API_KEY = ""
+WRITE_API_KEY = ''
 
 
+def createChannel():
+    # Request channel list from ThinkSpeak
+    method = 'GET'
+    uri = 'https://api.thingspeak.com/channels.json'
+    headers = {'Host': 'api.thingspeak.com',
+               'Content-Type': 'application/x-www-form-urlencoded'}
 
-def kanalaSortu():
+    content = {'api_key': USER_API_KEY}
+    content_encoded = urllib.parse.urlencode(content)
+    headers['Content-Length'] = str(len(content_encoded))
 
-    # KANALEN ZERRENDA LORTZEKO ESKARIA EGIN
-    metodoa = 'GET'
-    uria = "https://api.thingspeak.com/channels.json"
-    goiburuak = {'Host': 'api.thingspeak.com', 'Content-Type': 'application/x-www-form-urlencoded'}
-    edukia = {'api_key': USER_API_KEY}
-    edukia_encoded = urllib.parse.urlencode(edukia)
-    goiburuak['Content-Length'] = str(len(edukia_encoded))
+    response = requests.request(method, uri, data=content_encoded,
+                                headers=headers, allow_redirects=False)
 
-    erantzuna = requests.request(metodoa, uria, headers=goiburuak,
-                                 data=edukia_encoded, allow_redirects=False)
+    # Test if a channel already exist or not
+    isChannel = False
 
-    # KANALEN BAT EXISTITZEN DEN EDO EZ KONPROBATU
-    apiKey_file = Path('apiKey.txt')
-    kanalaDago = False
-    if apiKey_file.is_file():
+    channelInfo = Path('channelInfo.txt')
+    if channelInfo.is_file():
 
-        with open(apiKey_file, 'r', encoding='utf8') as file:
+        with open(channelInfo, 'r', encoding='utf8') as file:
             channel_id = int(file.readline())
 
-        kanalak = json.loads(erantzuna.content)
+        channels = json.loads(response.content)
 
-        for i in range(kanalak.__len__()):
-            if kanalak[i]['id'] == int(channel_id):
-                kanalaDago = True
+        for i in range(channels.__len__()):
+            if channels[i]['id'] == int(channel_id):
+                isChannel = True
 
-    if (kanalaDago):
-        print("KANALEN BAT SORTUTA DAGO, BERAZ, HORI ERABILIKO DA. EZ DA BERRIRIK SORTUKO")
+    if isChannel:
+        print('YOU ALREDY HAVE A CHANNEL CREATED, SO THAT ONE IS GONNA BE USED NOW')
+        print('-------------------------------------------------------------------')
 
     else:
-        # KANAL BERRIA SORTU
-        metodoa = 'POST'
-        uria = "https://api.thingspeak.com/channels.json"
-        goiburuak = {'Host': 'api.thingspeak.com', 'Content-Type': 'application/x-www-form-urlencoded'}
-        edukia = {'api_key': USER_API_KEY, 'name': 'Nire Kanala', 'field1': "%CPU", 'field2': "%RAM"}
-        edukia_encoded = urllib.parse.urlencode(edukia)
-        goiburuak['Content-Length'] = str(len(edukia_encoded))
+        # If not a channel alredy created, a new channel would be created
+        print('YOU DONT HAVE A CHANNEL CREATED, SO A NEW ONE IS BEING CREATED FOR YOU')
+        print('----------------------------------------------------------------------')
+        method = 'POST'
+        uri = 'https://api.thingspeak.com/channels.json'
+        headers = {'Host': 'api.thingspeak.com',
+                   'Content-Type': 'application/x-www-form-urlencoded'}
 
-        # ESKARIA EGIKARITU
-        erantzuna = requests.request(metodoa, uria, headers=goiburuak,
-                                     data=edukia_encoded, allow_redirects=False)
+        content = {'api_key': USER_API_KEY,
+                   'name': 'Nire Kanala',
+                   'field1': "%CPU",
+                   'field2': "%RAM"}
 
-        # ESKAERAREN KODEA JASO
-        kodea = erantzuna.status_code
+        content_encoded = urllib.parse.urlencode(content)
+        headers['Content-Length'] = str(len(content_encoded))
 
-        # KANALAREN ID LORTU
-        edukia = erantzuna.content
-        if kodea == 402:
-            print('KANAL KOP MAX')
+        response = requests.request(method, uri, data=content_encoded,
+                                    headers=headers, allow_redirects=False)
+
+        code = response.status_code
+        content = response.content
+
+        if code == 402:
+            print('YOU HAVE REACHED THE MAXIMUM CHANNEL QUANTITY, PLEASE REMOVE ONE BEFORE CREATING A NEW ONE')
+            print('------------------------------------------------------------------------------------------')
 
         else:
-            json_parsed = json.loads(edukia)
-            kanal_id = json_parsed['id']
-            key=""
+            json_parsed = json.loads(content)
+            channel_id = json_parsed['id']
+            key = ''
 
-            # IDAZKETA PASAHITZA LORTU
+            # Get WRITE_API_KEY
             for api in json_parsed['api_keys']:
                 if api['write_flag']:
                     key = api['api_key']
 
-            # TESTU FITXATEGIAN ID ETA WRITE-KEY GORDE
-            with open('apiKey.txt', 'w') as fitx:
-                fitx.write(str(kanal_id) + '\n')
-                fitx.write(key)
+            # Save on apiKey.txt file the channel id and the write key
+            with open('channelInfo.txt', 'w') as file:
+                file.write(str(channel_id) + '\n')
+                file.write(key)
 
-def cpu_ram():
+
+def cpuRam():
     time.sleep(2)
     time.sleep(2)
     while True:
-        # BALIOAK LORTU PSUTIL LIBURUTEGIA ERABILIZ
+        # Get CPU and RAM stats by using psutil library
         cpu = psutil.cpu_percent(interval=1)
         ram = psutil.virtual_memory().percent
 
-        # ESKAERAREN PARAMETROAK DEFINITU
-        metodoa = "POST"
-        uria = "https://api.thingspeak.com/update.json"
-        goiburuak = {'Host': 'api.thingspeak.com', 'Content-Type': 'application/x-www-form-urlencoded'}
-        edukia = {'api_key': WRITE_API_KEY,
-                  'name': 'Nire kanala',
-                  'field1': cpu,
-                  'field2': ram}
-        edukia_encoded = urllib.parse.urlencode(edukia)
-        goiburuak['Content-Length'] = str(len(edukia_encoded))
+        # Post the stats on ThinkSpeak
+        method = "POST"
+        uri = 'https://api.thingspeak.com/update.json'
+        headers = {'Host': 'api.thingspeak.com',
+                   'Content-Type': 'application/x-www-form-urlencoded'}
 
-        # ESKAERA EGIKARITU
-        erantzuna = requests.request(metodoa, uria, data=edukia_encoded,
-                                  headers=goiburuak, allow_redirects=False)
+        content = {'api_key': WRITE_API_KEY,
+                   'name': 'Nire kanala',
+                   'field1': cpu,
+                   'field2': ram}
 
-        # ERANTZUNAREN KODEA JASO
-        kodea = erantzuna.status_code
-        deskribapena = erantzuna.reason
-        print(str(kodea) + " " + deskribapena)
+        content_encoded = urllib.parse.urlencode(content)
+        headers['Content-Length'] = str(len(content_encoded))
 
-        # 15s-RO EXEKUTATU
+        response = requests.request(method, uri, data=content_encoded,
+                                    headers=headers, allow_redirects=False)
+
+        print('NEW DATA HAS BEEN SENT TO THINKSPEAK CHANNEL (NEXT DATA SENDING IN 15s)')
+
+        # Repeat the process every 15s
         time.sleep(15)
 
 
+def cleanChannel():
+    # Delete channel from ThinkSpeak
+    method = "DELETE"
+    uri = 'https://api.thingspeak.com/channels/' + str(CHANNEL_ID) + '/feeds.json'
+    headers = {'Host': 'api.thingspeak.com',
+               'Content-Type': 'application/x-www-form-urlencoded'}
 
-def kanalaGarbitu():
-    # ESKARIAREN PARAMETROAK DEFINITU
-    metodoa = "DELETE"
-    uria = "https://api.thingspeak.com/channels/" + str(CHANNEL_ID) + "/feeds.json"
-    goiburuak = {'Host': 'api.thingspeak.com',
-                 'Content-Type': 'application/x-www-form-urlencoded'}
-    edukia = {'api_key': USER_API_KEY}
-    edukia_encoded = urllib.parse.urlencode(edukia)
-    goiburuak['Content-Length'] = str(len(edukia_encoded))
+    content = {'api_key': USER_API_KEY}
+    content_encoded = urllib.parse.urlencode(content)
+    headers['Content-Length'] = str(len(content_encoded))
 
-    # ESKARIA EGIKARITU
-    erantzuna = requests.request(metodoa, uria, data=edukia_encoded,
-                                headers=goiburuak, allow_redirects=False)
+    response = requests.request(method, uri, data=content_encoded,
+                                headers=headers, allow_redirects=False)
 
-    # ESKARIAREN KODEA JASO
-    kodea = erantzuna.status_code
-    deskribapena = erantzuna.reason
-    print(str(kodea) + " " + deskribapena)
+    print('YOUR CHANNEL HAS BEEN CLEANED UP')
+    print('--------------------------------')
 
 
-def datuenDeskarga():
-    metodoa = 'GET'
-    uria = 'https://api.thingspeak.com/channels/' + str(CHANNEL_ID) + '/feeds.json'
-    goiburua = {'Host': 'api.thingspeak.com', 'Content-Type': 'application/x-www-form-urlencoded'}
-    edukia = {'api_key': WRITE_API_KEY, 'results': 100}
-    edukia_encoded = urllib.parse.urlencode(edukia)
+def dataDownload():
+    # Get data from ThinkSpeak channel
+    method = 'GET'
+    uri = 'https://api.thingspeak.com/channels/' + str(CHANNEL_ID) + '/feeds.json'
+    headers = {'Host': 'api.thingspeak.com',
+               'Content-Type': 'application/x-www-form-urlencoded'}
 
-    erantzuna = requests.request(metodoa, uria, headers=goiburua, data=edukia_encoded, allow_redirects=False)
+    content = {'api_key': WRITE_API_KEY, 'results': 100}
+    content_encoded = urllib.parse.urlencode(content)
+    response = requests.request(method, uri, data=content_encoded,
+                                headers=headers, allow_redirects=False)
 
-    print(str(erantzuna.status_code) + " " + erantzuna.reason)
-    return erantzuna.content
+    print('---------------------------------------------------------------')
+    print('DATA IS GOING TO BE DOWNLOADED, IT WOULD APPEAR AT data.csv')
+    print('---------------------------------------------------------------')
+    return response.content
 
 
-def fitxategiaCSV(hiztegia):
-    with open('csv_fitx.csv', 'w', newline='') as csvfile:
+def CSVFileCreate(data):
+
+    with open('data.csv', 'w', newline='', encoding='utf8') as csvfile:
         csvfile = csv.writer(csvfile, delimiter=',', quoting=csv.QUOTE_MINIMAL)
         feedsParam = []
-        if hiztegia['feeds'].__len__() == 0:
-            print("Ez dago daturik")
+        if data['feeds'].__len__() == 0:
+            print('NO DATA TO DOWNLOAD')
         else:
-            for param in hiztegia['feeds'][0]:
+            print('DATA DOWNLOADED CORRECTLY')
+            for param in data['feeds'][0]:
                 if not param.__eq__('entry_id'):
                     feedsParam.append(param)
             csvfile.writerow(feedsParam)
 
-            for param in hiztegia['feeds']:
+            for param in data['feeds']:
                 timestamp = param[feedsParam[0]]
                 cpu = param[feedsParam[1]]
                 ram = param[feedsParam[2]]
                 csvfile.writerow([str(timestamp), str(cpu), str(ram)])
 
 
-def kudeatzailea(sig_num, frame):
-    print('\nSignal handler called with signal ' + str(sig_num))
-    print('Check signal number on ''https://en.wikipedia.org/wiki/Signal_%28IPC%29#Default_action')
-    print('\nExiting gracefully')
-    hiztegia = json.loads(datuenDeskarga())
-    fitxategiaCSV(hiztegia)
-    kanalaGarbitu()
+def handler(sig_num, frame):
+    print('\nSIGNAL HANDLER CALLED WITH SIGNAL ' + str(sig_num))
+    print('\nEXITING GRACEFULLY')
+    data = json.loads(dataDownload())
+    CSVFileCreate(data)
+    cleanChannel()
     sys.exit(0)
 
 
 if __name__ == "__main__":
-    # SIGINT JASOTZEN DENEAN, "KUDEATZAILEA" METODOA EXEKUTATUKO DA
-    signal.signal(signal.SIGINT, kudeatzailea)
-    print('EXEKUZIOAN DAGO PROGRAMA, SAKATU CTRL + C EXEKUZIOA GELDITZEKO')
-    kanalaSortu()
-    with open('apiKey.txt', 'r') as file:
-        CHANNEL_ID = int(file.readline())
-        WRITE_API_KEY = file.readline()
-    cpu_ram()
-
+    #  When SIGINT is received handler gets executed
+    signal.signal(signal.SIGINT, handler)
+    print('---------------------------------------------------------------')
+    print('THE PROGRAM IS BEING EXECUTED, PRESS CTRL + C TO STOP EXECUTION')
+    print('---------------------------------------------------------------')
+    createChannel()
+    channelInfo = Path('channelInfo.txt')
+    if channelInfo.is_file():
+        with open(channelInfo, 'r', encoding='utf8') as file:
+            CHANNEL_ID = int(file.readline())
+            WRITE_API_KEY = file.readline()
+    cpuRam()
