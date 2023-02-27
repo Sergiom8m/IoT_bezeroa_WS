@@ -2,7 +2,7 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/.idea/IoT_bezeroa.iml" filepath="$PROJECT_DIR$/.idea/IoT_bezeroa.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/IoT_client.iml" filepath="$PROJECT_DIR$/.idea/IoT_client.iml" />
     </modules>
   </component>
 </project>

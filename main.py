@@ -7,7 +7,7 @@ import sys
 import requests
 import urllib.parse
 from pathlib import Path
-from USER_API_KEY import USER_API_KEY
+from USER_API_KEY import USER_API_KEY  # Import USER_API_KEY from another file to avoid hard coding
 
 CHANNEL_ID = 0
 WRITE_API_KEY = ''

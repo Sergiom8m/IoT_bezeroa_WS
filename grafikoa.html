@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+    <script type="text/javascript">
+      google.charts.load('current', {'packages':['corechart']});
+      google.charts.setOnLoadCallback(drawChart);
+
+      function feedsData() {
+         var xhttp = new XMLHttpRequest();
+         var uri = "https://api.thingspeak.com/channels/1897127/feeds.json";
+         xhttp.onreadystatechange = function() {
+            if(this.readyState == 4 && this.status == 200) {
+               // Show the parsed data on the console
+               var responseData = JSON.parse(xhttp.responseText);
+               console.log(responseData);
+               // Call drawChart() function to create de diagram
+               drawChart(responseData)
+            };
+         };
+         // Initialize HTTP request
+         xhttp.open("GET", uri, true);
+         // Send the HTTP request
+         xhttp.send();
+      };
+
+
+      function drawChart(data) {
+
+         // DataTable format used to storage data
+         var dataTable = new google.visualization.DataTable();
+         dataTable.addColumn('string', 'CREATED AT');
+         dataTable.addColumn('number', 'CPU');
+         dataTable.addColumn('number', 'RAM');
+
+         // Add data from JSON to DataTable
+         var feeds = data['feeds']
+         for (var i = 0; i < feeds.length; i++) {
+           var row = []
+           row.push(feeds[i]['created_at'].split('T')[1].slice(0, -1))
+           row.push(parseFloat(feeds[i]['field1']))
+           row.push(parseFloat(feeds[i]['field2']))
+           dataTable.addRow(row)
+         }
+
+        // Display options
+         var options = {
+           title: 'Computer performance', legend: {position: 'bottom'},
+           curveType: 'function', colors: ['red', 'blue'],
+           series: {0: {targetAxisIndex: 0}, 1: {targetAxisIndex: 1}},
+           vAxes: {0: {title: '%CPU'}, 1: {title: '%RAM'}}
+        };
+
+        // Set where the diagram is going to be introduced on the DOM
+        var chart = new google.visualization.LineChart(document.getElementById('curve_chart'));
+
+        // Draw the diagram
+        chart.draw(dataTable, options);
+      }
+    </script>
+  </head>
+  <body onload="feedsData()">
+    <div id="curve_chart" style="width: 900px; height: 500px"></div>
+  </body>
+</html>
+
